@@ -6,7 +6,7 @@ import { redis } from '../../main';
 import { Redis } from 'ioredis';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
-  const gogoanime = new ANIME.Gogoanime(process.env.GOGOANIME_URL);
+  const gogoanime = new ANIME.Gogoanime("https://anitaku.io");
   const redisCacheTime = 60 * 60;
   const redisPrefix = 'gogoanime:';
 
@@ -54,18 +54,16 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
         redis as Redis,
         `${redisPrefix}info;${id}`,
         async () => await gogoanime
-        .fetchAnimeInfo(id)
-        .catch((err) => reply.status(404).send({ message: err })),
+          .fetchAnimeInfo(id)
+          .catch((err) => reply.status(404).send({ message: err })),
         redisCacheTime,
       ) : await gogoanime
-      .fetchAnimeInfo(id)
-      .catch((err) => reply.status(404).send({ message: err }));
+        .fetchAnimeInfo(id)
+        .catch((err) => reply.status(404).send({ message: err }));
 
       reply.status(200).send(res);
     } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+      reply.status(500).send({ message: 'Something went wrong. Please try again later.' });
     }
   });
 
@@ -78,97 +76,82 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
         redis as Redis,
         `${redisPrefix}genre;${page};${genre}`,
         async () => await gogoanime
-        .fetchGenreInfo(genre, page)
-        .catch((err) => reply.status(404).send({ message: err })),
+          .fetchGenreInfo(genre, page)
+          .catch((err) => reply.status(404).send({ message: err })),
         redisCacheTime,
       ) : await gogoanime
-      .fetchGenreInfo(genre, page)
-      .catch((err) => reply.status(404).send({ message: err }));
+        .fetchGenreInfo(genre, page)
+        .catch((err) => reply.status(404).send({ message: err }));
       reply.status(200).send(res);
     } catch {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+      reply.status(500).send({ message: 'Something went wrong. Please try again later.' });
     }
   });
 
   fastify.get('/genre/list', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      
       const res = redis ? await cache.fetch(
         redis as Redis,
         `${redisPrefix}genre-list`,
         async () => await gogoanime
-        .fetchGenreList()
-        .catch((err) => reply.status(404).send({ message: err })),
+          .fetchGenreList()
+          .catch((err) => reply.status(404).send({ message: err })),
         redisCacheTime * 24,
       ) : await gogoanime
-      .fetchGenreList()
-      .catch((err) => reply.status(404).send({ message: err }));
+        .fetchGenreList()
+        .catch((err) => reply.status(404).send({ message: err }));
       reply.status(200).send(res);
     } catch {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+      reply.status(500).send({ message: 'Something went wrong. Please try again later.' });
     }
   });
 
-  fastify.get(
-    '/watch/:episodeId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const episodeId = (request.params as { episodeId: string }).episodeId;
-      const server = (request.query as { server: StreamingServers }).server;
+  fastify.get('/watch/:episodeId', async (request: FastifyRequest, reply: FastifyReply) => {
+    const episodeId = (request.params as { episodeId: string }).episodeId;
+    const server = (request.query as { server: StreamingServers }).server;
 
-      if (server && !Object.values(StreamingServers).includes(server)) {
-        reply.status(400).send('Invalid server');
-      }
+    if (server && !Object.values(StreamingServers).includes(server)) {
+      reply.status(400).send('Invalid server');
+    }
 
-      try {
-        const res = redis ? await cache.fetch(
-          redis as Redis,
-          `${redisPrefix}watch;${server};${episodeId}`,
-          async () => await gogoanime
+    try {
+      const res = redis ? await cache.fetch(
+        redis as Redis,
+        `${redisPrefix}watch;${server};${episodeId}`,
+        async () => await gogoanime
           .fetchEpisodeSources(episodeId, server)
           .catch((err) => reply.status(404).send({ message: err })),
-          redisCacheTime,
-        ) : await gogoanime
+        redisCacheTime,
+      ) : await gogoanime
         .fetchEpisodeSources(episodeId, server)
         .catch((err) => reply.status(404).send({ message: err }));
 
-        reply.status(200).send(res);
-      } catch (err) {
-        reply
-          .status(500)
-          .send({ message: 'Something went wrong. Please try again later.' });
-      }
-    },
-  );
+      reply.status(200).send(res);
+    } catch (err) {
+      reply.status(500).send({ message: 'Something went wrong. Please try again later.' });
+    }
+  });
 
-  fastify.get(
-    '/servers/:episodeId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const episodeId = (request.params as { episodeId: string }).episodeId;
+  fastify.get('/servers/:episodeId', async (request: FastifyRequest, reply: FastifyReply) => {
+    const episodeId = (request.params as { episodeId: string }).episodeId;
 
-      try {
-        const res = redis ? await cache.fetch(
-          redis as Redis,
-          `${redisPrefix}servers;${episodeId}`,
-          async () => await gogoanime
+    try {
+      const res = redis ? await cache.fetch(
+        redis as Redis,
+        `${redisPrefix}servers;${episodeId}`,
+        async () => await gogoanime
           .fetchEpisodeServers(episodeId)
           .catch((err) => reply.status(404).send({ message: err })),
-          redisCacheTime,
-        ) : await gogoanime
+        redisCacheTime,
+      ) : await gogoanime
         .fetchEpisodeServers(episodeId)
         .catch((err) => reply.status(404).send({ message: err }));
 
-        reply.status(200).send(res);
-      } catch (err) {
-        reply
-          .status(500)
-          .send({ message: 'Something went wrong. Please try again later.' });
-      }
-    },
-  );
+      reply.status(200).send(res);
+    } catch (err) {
+      reply.status(500).send({ message: 'Something went wrong. Please try again later.' });
+    }
+  });
 
   fastify.get('/top-airing', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -183,9 +166,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
       reply.status(200).send(res);
     } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Contact developers for help.' });
+      reply.status(500).send({ message: 'Something went wrong. Contact developers for help.' });
     }
   });
 
@@ -202,9 +183,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
       reply.status(200).send(res);
     } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Contact developers for help.' });
+      reply.status(500).send({ message: 'Something went wrong. Contact developers for help.' });
     }
   });
 
@@ -221,77 +200,67 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
       reply.status(200).send(res);
     } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Contact developers for help.' });
+      reply.status(500).send({ message: 'Something went wrong. Contact developers for help.' });
     }
   });
 
-  fastify.get(
-    '/recent-episodes',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const type = (request.query as { type: number }).type ?? 1;
-        const page = (request.query as { page: number }).page ?? 1;
+  fastify.get('/recent-episodes', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const type = (request.query as { type: number }).type ?? 1;
+      const page = (request.query as { page: number }).page ?? 1;
 
-        const res = redis ? await cache.fetch(
-          redis as Redis,
-          `${redisPrefix}recent-episodes;${page};${type}`,
-          async () => await gogoanime.fetchRecentEpisodes(page, type),
-          redisCacheTime,
-        ) : await gogoanime.fetchRecentEpisodes(page, type);
+      const res = redis ? await cache.fetch(
+        redis as Redis,
+        `${redisPrefix}recent-episodes;${page};${type}`,
+        async () => await gogoanime.fetchRecentEpisodes(page, type),
+        redisCacheTime,
+      ) : await gogoanime.fetchRecentEpisodes(page, type);
 
-        reply.status(200).send(res);
-      } catch (err) {
-        reply
-          .status(500)
-          .send({ message: 'Something went wrong. Contact developers for help.' });
-      }
-    },
-  );
-  fastify.get(
-    '/anime-list',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const page = (request.query as { page: number }).page ?? 1;
+      reply.status(200).send(res);
+    } catch (err) {
+      reply.status(500).send({ message: 'Something went wrong. Contact developers for help.' });
+    }
+  });
 
-        const res = redis ? await cache.fetch(
-          redis as Redis,
-          `gogoanime:anime-list;${page}`,
-          async () => await gogoanime.fetchAnimeList(page),
-          redisCacheTime,
-        ) : await gogoanime.fetchAnimeList(page);
+  fastify.get('/anime-list', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const page = (request.query as { page: number }).page ?? 1;
 
-        reply.status(200).send(res);
-      } catch (err) {
-        reply
-          .status(500)
-          .send({ message: 'Something went wrong. Contact developers for help.' });
-      }
-    },
-  );
+      const res = redis ? await cache.fetch(
+        redis as Redis,
+        `gogoanime:anime-list;${page}`,
+        async () => await gogoanime.fetchAnimeList(page),
+        redisCacheTime,
+      ) : await gogoanime.fetchAnimeList(page);
+
+      reply.status(200).send(res);
+    } catch (err) {
+      reply.status(500).send({ message: 'Something went wrong. Contact developers for help.' });
+    }
+  });
 
   fastify.get('/download', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const downloadLink = (request.query as { link: string }).link;
-      if(!downloadLink){
+      if (!downloadLink) {
         reply.status(400).send('Invalid link');
+        return;
       }
+
       const res = redis ? await cache.fetch(
         redis as Redis,
         `${redisPrefix}download-${downloadLink}`,
         async () => await gogoanime
-        .fetchDirectDownloadLink(downloadLink)
-        .catch((err) => reply.status(404).send({ message: err })),
+          .fetchDirectDownloadLink(downloadLink)
+          .catch((err) => reply.status(404).send({ message: err })),
         redisCacheTime * 24,
       ) : await gogoanime
-      .fetchDirectDownloadLink(downloadLink, process.env.RECAPTCHATOKEN ?? '')
-      .catch((err) => reply.status(404).send({ message: err }));
+        .fetchDirectDownloadLink(downloadLink, '')
+        .catch((err) => reply.status(404).send({ message: err }));
+
       reply.status(200).send(res);
     } catch {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+      reply.status(500).send({ message: 'Something went wrong. Please try again later.' });
     }
   });
 };
